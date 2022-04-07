@@ -1,0 +1,3 @@
+from views.animal_requests import create_animal
+from views.location_resquests import create_location
+from views.employee_requests import create_employee
