@@ -25,7 +25,7 @@ ANIMALS = [
 
 
 def get_all_animals():
-    """_summary_"""
+    # this function returns all the animals in the list
     return ANIMALS
 
 
@@ -58,3 +58,27 @@ def create_animal(animal):
     
     #return the new dictionary that was added to the list
     return animal
+
+def delete_animal(id):
+    animal_index = -1
+    
+    # this is finding the animal id of the one that is passed in and then getting the index of the matching id object
+    for index, animal in enumerate(ANIMALS):
+        if animal["id"] == id:
+            animal_index = index
+    
+    if animal_index >=0:
+        ANIMALS.pop(animal_index)
+    
+
+def update_animal(post_body, id):
+    animal_index = -1
+    for index, animal in enumerate(ANIMALS):
+        if id == animal["id"]:
+            animal_index = index
+    
+    ANIMALS[animal_index]["status"] = post_body
+    
+    return ANIMALS[animal_index]
+            
+

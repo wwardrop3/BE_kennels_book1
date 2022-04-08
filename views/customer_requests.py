@@ -36,3 +36,22 @@ def create_customer(customer):
     CUSTOMERS.append(customer)
     
     return customer
+
+
+# this finds the index of the object we are deleting and then removes it from list
+def delete_customer(id):
+    customer_index = -1
+    for index, customer in enumerate(CUSTOMERS):
+        if customer["id"] == id:
+            customer_index = index
+            CUSTOMERS.pop(customer_index)
+            
+            
+def update_customer(post_body, id):
+    customer_index = -1
+    for index, customer in enumerate(CUSTOMERS):
+        if customer["id"] == id:
+            customer_index =index
+            CUSTOMERS[customer_index]["status"] = post_body
+            
+    return CUSTOMERS[customer_index]

@@ -34,3 +34,19 @@ def create_location(location):
     LOCATIONS.append(location)
     
     return location
+
+def delete_location(id):
+    location_index = -1
+    for index, location in enumerate(LOCATIONS):
+        if location["id"] == id:
+            location_index = index
+            LOCATIONS.pop(location_index)
+            
+            
+def update_location(post_body, id):
+    location_index = -1
+    for index, location in enumerate(LOCATIONS):
+        if location["id"] == id:
+            location_index = index
+            
+    LOCATIONS[location_index]["status"] = post_body

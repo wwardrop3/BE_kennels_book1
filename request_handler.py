@@ -1,10 +1,10 @@
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 # from multiprocessing.sharedctypes import Value
-from views.animal_requests import get_all_animals, get_single_animal, create_animal
-from views.customer_requests import create_customer, get_all_customers, get_single_customer
-from views.employee_requests import create_employee, get_all_employees, get_single_employee
-from views.location_resquests import get_all_locations, get_single_location, create_location
+from views.animal_requests import delete_animal, get_all_animals, get_single_animal, create_animal, update_animal
+from views.customer_requests import create_customer, delete_customer, get_all_customers, get_single_customer, update_customer
+from views.employee_requests import create_employee, delete_employee, get_all_employees, get_single_employee, update_employee
+from views.location_requests import delete_location, get_all_locations, get_single_location, create_location, update_location
 import json
 
 
@@ -16,7 +16,10 @@ import json
 # common purpose is to respond to HTTP requests from a client.
 
 
+# class is the blueprint for an object...self is a reference to the class itself...self is "my " pronoun...makes instance first then passes instance into the class to attach the properties
+# init creates empty object, then calls its own init method, passes the object into init method to attach properties to it
 
+# this is a unique request handler
 class HandleRequests(BaseHTTPRequestHandler):
     # This is a Docstring it should be at the beginning of all classes and functions
     # It gives a description of the class or function
@@ -56,12 +59,21 @@ class HandleRequests(BaseHTTPRequestHandler):
         """
         
         #sets the response code to send when this is run (201 means successfully written)
+        # this is building up the response to the request
         self._set_headers(201)
-        content_len = int(self.headers.get('content-length', 0))
-        post_body = self.rfile.read(content_len)
         
+        # creating a variable of a number of bytes 
+        # headers are the meta data to the body text that we are sending
+        # the second argument 0 is a fallback that avoids breaking the server
+        content_len = int(self.headers.get('content-length', 0))
+        
+        # we need to know the byte length because it tells rfile when to turn itself off and stop reading, NEED TO TELL RFILE TO STOP AFTER THE BYTES
+        # telling rfile how far to read
+        post_body = self.rfile.read(content_len)
+        print(post_body)
         post_body = json.loads(post_body)
         
+        # tuple unpacking
         (resource, id) =  self.parse_url(self.path)
         
         new_animal = None
@@ -90,10 +102,62 @@ class HandleRequests(BaseHTTPRequestHandler):
     # Here's a method on the class that overrides the parent's method.
     # It handles any PUT request.
 
+    def do_DELETE(self):
+    # Set a 204 response code
+        self._set_headers(204)
+
+        # Parse the URL
+        (resource, id) = self.parse_url(self.path)
+
+        # Delete a single animal from the list
+        if resource == "animals":
+            delete_animal(id)
+            
+        elif resource == "customers":
+            delete_customer(id)
+            
+        elif resource == "employees":
+            delete_employee(id)
+            
+        elif resource == "locations":
+            delete_location(id)
+            
+
+        # Encode the new animal and send in response
+        self.wfile.write("".encode())
+        
+        
+    #this method is going to override the parent's method.  Handles modifying PUT requests
     def do_PUT(self):
         """Handles PUT requests to the server
         """
-        self.do_POST()
+        self._set_headers(204)
+        content_len = int(self.headers.get('content-length', 0))
+        post_body = self.rfile.read(content_len)
+        
+        # This overwrites the post body with the returned json formatted data
+        post_body = json.loads(post_body)
+        
+        # then we need to parse the url request
+        (resource, id) = self.parse_url(self.path)
+        print(resource)
+        # pass in the id from the request to the function that modifies the array
+        if resource == "animals":
+            update_animal(post_body, id)
+            
+        elif resource == "employees":
+            update_employee(post_body, id)
+            
+        elif resource == "locations":
+            update_location(post_body, id)
+        
+        elif resource == "employees":
+            update_customer(post_body, id)
+        
+        
+        
+        # empty string because we dont send anything back
+        self.wfile.write("".encode())
 
 # Here's a method on the class that overrides the parent's method.
     # It handles any GET request.
@@ -133,7 +197,7 @@ class HandleRequests(BaseHTTPRequestHandler):
                 response = f"{get_all_customers()}"
         
         
-        # this sends a response back to the client
+        # this sends a response back to the client, it is WRITING THE MESSAGE BACK TO SENDER (this is a get so its ht epurpose)
         self.wfile.write(response.encode())
         
         
@@ -159,10 +223,14 @@ class HandleRequests(BaseHTTPRequestHandler):
 def main():
     """Starts the server on port 8088 using the HandleRequests class
     """
+    # this is where the external server address would go
     host = ''
+    # a host can have multiple things, so the 8088 is the apartment unit of the building
     port = 8088
-    HTTPServer((host, port), HandleRequests).serve_forever()
-    print("asdf")
+    # port is basically the event listener, where the httpserver is listening for changes
+    #inside http server will instantiate the new handle requests object
+    HTTPServer((host, port), HandleRequests).serve_forever() 
+    # it will only make 1 instance of handle requests at the outset before an actual request is made
 
 
 if __name__ == "__main__":
