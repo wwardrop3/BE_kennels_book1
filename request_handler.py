@@ -2,10 +2,11 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 # from multiprocessing.sharedctypes import Value
 from views.animal_requests import get_all_animals, get_single_animal, create_animal
-from views.customer_requests import get_all_customers, get_single_customer
+from views.customer_requests import create_customer, get_all_customers, get_single_customer
 from views.employee_requests import create_employee, get_all_employees, get_single_employee
 from views.location_resquests import get_all_locations, get_single_location, create_location
 import json
+
 
 
 
@@ -80,6 +81,11 @@ class HandleRequests(BaseHTTPRequestHandler):
             new_employee = create_employee(post_body)
             
             self.wfile.write(f"{new_employee}".encode())
+            
+        if resource == "customers":
+            new_customer = create_customer(post_body)
+            
+            self.wfile.write(f"{new_customer}".encode())
         
     # Here's a method on the class that overrides the parent's method.
     # It handles any PUT request.

@@ -17,8 +17,7 @@ EMPLOYEES = [
     {
         "id":4,
         "name":"Bill"
-    },
-    
+    }
 ]
 
 def get_all_employees():
@@ -40,5 +39,7 @@ def create_employee(employee):
     new_id = max_id + 1
     
     employee["id"] = new_id
+    
+    EMPLOYEES.append(employee)
     
     return employee
