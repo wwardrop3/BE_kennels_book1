@@ -1,3 +1,8 @@
+import sqlite3
+import json
+from models import Animal
+
+
 ANIMALS = [
     {
         "id": 1,
@@ -25,23 +30,91 @@ ANIMALS = [
 
 
 def get_all_animals():
-    # this function returns all the animals in the list
-    return ANIMALS
+    # Open a connection to the database
+    with sqlite3.connect("./kennel.sqlite3") as conn:
 
+        # Just use these. It's a Black Box.
+        conn.row_factory = sqlite3.Row
+        db_cursor = conn.cursor()
+
+        # Write the SQL query to get the information you want
+        db_cursor.execute("""
+            SELECT
+                a.id,
+                a.name,
+                a.breed,
+                a.status,
+                a.location_id,
+                a.customer_id
+            FROM animal a
+        """)
+
+        # Initialize an empty list to hold all animal representations
+        animals = []
+
+        # Convert rows of data into a Python list
+        
+        # a cursor is an instance of a class with certain arrays and methods
+        dataset = db_cursor.fetchall()
+
+        # Iterate list of data returned from database
+    
+        for row in dataset:
+
+            # Create an animal instance from the current row.
+            # Note that the database fields are specified in
+            # exact order of the parameters defined in the
+            # Animal class above.
+            animal = Animal(row['id'], row['name'], row['breed'],
+                            row['status'], row['location_id'],
+                            row['customer_id'])
+
+            animals.append(animal.__dict__)
+
+    # Use `json` package to properly serialize list as JSON
+    return json.dumps(animals)
 
 # Function with single paramenter
 def get_single_animal(id):
-    # definine the requested animal and set value to None
-    requested_animal = None
+    # this allows the page to access data in the sqlite3 database, conn is a connection
+    with sqlite3.connect("./kennel.sqlite3") as conn:
     
-    # iterate through Animals array above
-    for animal in ANIMALS:
-        # checks the id parameter against every animal id property and will set the requested animal object if the id matches
-        if animal ["id"]  == id:
-            requested_animal = animal
+    #with creates a connection with the database and disconnects once its done
+    #gives back connection OBJECT
     
-    return requested_animal
+        #row_factory is a method of the connection object 
+        # Row is built in way to process the database information we get back
+        conn.row_factory = sqlite3.Row
+        
+        # cursor object with methods for executing sql in python..
+        # python object that works with sql
+        db_cursor = conn.cursor()
 
+
+
+        db_cursor.execute("""
+            SELECT
+                a.id,
+                a.name,
+                a.breed,
+                a.status,
+                a.location_id,
+                a.customer_id
+            
+            FROM animal a
+            WHERE a.id= ?
+            """, (id, ))
+        # passes in the id that will go where the question mark is
+        
+        data = db_cursor.fetchone()
+        
+        animal = Animal(data['id'], data['name'], data['breed'],
+            data['status'], data['location_id'],
+            data['customer_id'])
+
+        return json.dumps(animal.__dict__)
+
+        
 
 def create_animal(animal):
     # gets the id value of the last object in the list

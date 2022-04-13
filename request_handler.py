@@ -2,7 +2,7 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 # from multiprocessing.sharedctypes import Value
 from views.animal_requests import delete_animal, get_all_animals, get_single_animal, create_animal, update_animal
-from views.customer_requests import create_customer, delete_customer, get_all_customers, get_single_customer, update_customer
+from views.customer_requests import create_customer, delete_customer, get_all_customers, get_customers_by_email, get_single_customer, update_customer
 from views.employee_requests import create_employee, delete_employee, get_all_employees, get_single_employee, update_employee
 from views.location_requests import delete_location, get_all_locations, get_single_location, create_location, update_location
 import json
@@ -166,57 +166,83 @@ class HandleRequests(BaseHTTPRequestHandler):
         """
         # Set the response code to 'Ok'
         self._set_headers(200)
-        # set response to empty dictionary
-        response = {}
         
-        # self.path is /animal/# or /animal then sets resource and id to
-        (resource, id) = self.parse_url(self.path)
-        
-        if resource == "animals":
-            if id is not None:
-                response = f"{get_single_animal(id)}"
-            else:
-                response = f"{get_all_animals()}"
-                
-        if resource == "locations":
-            if id is not None:
-                response = f"{get_single_location(id)}"
-            else:
-                response = f"{get_all_locations()}"
-                
-        if resource == "employees":
-            if id is not None:
-                response = f"{get_single_employee(id)}"
-            else:
-                response = f"{get_all_employees()}"
-                
-        if resource == "customers":
-            if id is not None:
-                response = f"{get_single_customer(id)}"
-            else:
-                response = f"{get_all_customers()}"
+        # Parse URL and store entire tuple in a variable
+        parsed = self.parse_url(self.path)
         
         
-        # this sends a response back to the client, it is WRITING THE MESSAGE BACK TO SENDER (this is a get so its ht epurpose)
-        self.wfile.write(response.encode())
+        # Response from parse_url() is a tuple with 2
+        # items in it, which means the request was for
+        # `/animals` or `/animals/2`
+        if len(parsed) == 2:
+            ( resource, id ) = parsed
+            print("asdfsd")
+
+            if resource == "animals":
+                if id is not None:
+                    response = f"{get_single_animal(id)}"
+                else:
+                    response = f"{get_all_animals()}"
+            elif resource == "customers":
+                if id is not None:
+                    response = f"{get_single_customer(id)}"
+                else:
+                    response = f"{get_all_customers()}"
+
+        # Response from parse_url() is a tuple with 3
+        # items in it, which means the request was for
+        # `/resource?parameter=value`
+        elif len(parsed) == 3:
+            ( resource, key, value ) = parsed
+
+            # Is the resource `customers` and was there a
+            # query parameter that specified the customer
+            # email as a filtering value?
+            if key == "email" and resource == "customers":
+                response = get_customers_by_email(value)
+
+                self.wfile.write(response.encode())
         
         
 # ALL OF THESE METHODS ARE JUST TAILORED TOOLS FOR THIS CLASS. PARSE URL IS A SMALL HELPER THAT EXTRACTS WHAT WE NEED TO IN ANOTHER PART OF THE CLASS
     #path is everything after it
     def parse_url(self, path):
-        # splits the /animals/1 path into (None, animals, 1) tuple
+        # splits the /animals/1 path into (None, animals, ) tuple
         path_params = path.split("/")
         resource = path_params[1]
-        id = None
         
-        try:
-            id = int(path_params[2])
-        except IndexError:
-            pass
-        except ValueError:
-            pass
         
-        return (resource, id)
+        # ****this is taking the url from the client and breaking it up so we can use it to target SQL database
+        
+        # check if there is a query string parameter
+        if "?" in resource:
+            # GIVEN: /customers?email=jenna@solis.com
+            param = resource.split("?")[0]# email=jenna@solis.com
+            resource = resource.split("?")[1]# 'customers'
+            pair = param.split("=")  # [ 'email', 'jenna@solis.com' ]
+            key = pair[0]
+            print(key)
+            value = pair[1]
+            
+            return (resource, key, value)
+        
+        else:
+            id = None
+            
+            try:
+                id = int(path_params[2])
+            except IndexError:
+                pass  # No route parameter exists: /animals
+            except ValueError:
+                pass  # Request had trailing slash: /animals/
+
+            return (resource, id)
+            
+        
+        
+        
+        
+
 
 # This function is not inside the class. It is the starting
 # point of this application.
