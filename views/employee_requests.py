@@ -131,3 +131,32 @@ def update_employee(post_body, id):
             employee_index = index
     
     EMPLOYEES[employee_index]["status"] = post_body
+    
+    
+def get_employees_by_location(location_id):
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        conn.row_factory = sqlite3.Row
+        
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            SELECT
+                a.id,
+                a.name,
+                a.address,
+                a.location_id
+
+            
+            FROM employee a
+            WHERE a.location_id= ? """, (location_id, ))
+        
+        employees = []
+        database = db_cursor.fetchall()
+        
+        for row in database:
+            employee = Employee(row['id'], row['name'], row['address'],
+            row['location_id'])
+            
+            employees.append(employee.__dict__)
+
+        return json.dumps(employees)

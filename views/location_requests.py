@@ -43,17 +43,16 @@ def get_all_locations():
         # Iterate list of data returned from database
     
         for row in dataset:
-
             # Create an location instance from the current row.
             # Note that the database fields are specified in
             # exact order of the parameters defined in the
             # location class above.
-            location = location(row['id'], row['name'], row['address'])
+            location = Location(row['id'], row['name'], row['address'])
 
             locations.append(location.__dict__)
 
     # Use `json` package to properly serialize list as JSON
-    return json.dumps(locations)
+        return json.dumps(locations)
 
 # Function with single paramenter
 def get_single_location(id):
@@ -112,9 +111,11 @@ def delete_location(id):
             
             
 def update_location(post_body, id):
-    location_index = -1
-    for index, location in enumerate(LOCATIONS):
-        if location["id"] == id:
-            location_index = index
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            UPDATE secretUser
+            SET salary = salary*1.10
             
-    LOCATIONS[location_index]["status"] = post_body
+                          """)

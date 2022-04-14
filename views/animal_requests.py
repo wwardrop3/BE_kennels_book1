@@ -2,33 +2,6 @@ import sqlite3
 import json
 from models import Animal
 
-
-ANIMALS = [
-    {
-        "id": 1,
-        "name": "Snickers",
-        "species": "Dog",
-        "locationId": 1,
-        "customerId": 4
-    },
-    {
-        "id": 2,
-        "name": "Gypsy",
-        "species": "Dog",
-        "locationId": 1,
-        "customerId": 2
-    },
-    {
-        "id": 3,
-        "name": "Blue",
-        "species": "Cat",
-        "locationId": 2,
-        "customerId": 1
-    }
-]
-
-
-
 def get_all_animals():
     # Open a connection to the database
     with sqlite3.connect("./kennel.sqlite3") as conn:
@@ -133,25 +106,108 @@ def create_animal(animal):
     return animal
 
 def delete_animal(id):
-    animal_index = -1
-    
-    # this is finding the animal id of the one that is passed in and then getting the index of the matching id object
-    for index, animal in enumerate(ANIMALS):
-        if animal["id"] == id:
-            animal_index = index
-    
-    if animal_index >=0:
-        ANIMALS.pop(animal_index)
-    
+    # connect with the database
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        #create the cursor object that will help modifying sql data
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            DELETE
+            FROM animal
+            WHERE id = ?
+            """, (id, ))
+        
+        
+        
 
-def update_animal(post_body, id):
-    animal_index = -1
-    for index, animal in enumerate(ANIMALS):
-        if id == animal["id"]:
-            animal_index = index
-    
-    ANIMALS[animal_index]["status"] = post_body
-    
-    return ANIMALS[animal_index]
+
+def update_animal(new_animal, id):
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            UPDATE Animal
+            SET
+                name = ?,
+                breed=?,
+                status = ?,
+                location_id = ?
+                customer_id = ?
+            WHERE id = ?
+                        """, (new_animal["name"], new_animal["breed"], new_animal["status"], new_animal["location_id"], new_animal["customer_id"], id, ))
+        rows_affected = db_cursor.rowcount
+            
+        if rows_affected == 0 #no rows affected means that it did not find anything to update and a 404 code
+            return False
+        else:
+            return True
+        
+
             
 
+def get_animals_by_location(location_id):
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        conn.row_factory = sqlite3.Row
+        
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            Select
+                a.id,
+                a.name,
+                a.status,
+                a.breed,
+                a.customer_id,
+                a.location_id
+            From animal a
+            Where a.location_id = ?
+            """,(location_id, ))
+        
+        animals = []
+        database = db_cursor.fetchall()
+        
+        #  row is a animal, specific dictionary within the database list of dictionaries
+        #  all objects in python come from classes, dictionaries do not have default values and are more temporary storage places
+        for row in database:
+            # creating an object of Animal, row is a dictionary
+            animal=Animal(row['id'], row['name'], row['status'], row['breed'], row['customer_id'], row["location_id"])
+            
+            #  turing animal into a dictionary
+            #  python objects and dictionaries are separate things
+            animals.append(animal.__dict__)
+            
+        return json.dumps(animals)
+    
+    
+def get_animals_by_status(status):
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        conn.row_factory = sqlite3.Row
+        
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            Select
+                a.id,
+                a.name,
+                a.status,
+                a.breed,
+                a.customer_id,
+                a.location_id
+            From animal a
+            Where a.status = ?
+            """,(status, ))
+        
+        animals = []
+        database = db_cursor.fetchall()
+        
+        #  row is a animal, specific dictionary within the database list of dictionaries
+        #  all objects in python come from classes, dictionaries do not have default values and are more temporary storage places
+        for row in database:
+            # creating an object of Animal, row is a dictionary
+            animal=Animal(row['id'], row['name'], row['status'], row['breed'], row['customer_id'], row["location_id"])
+            
+            #  turing animal into a dictionary
+            #  python objects and dictionaries are separate things
+            animals.append(animal.__dict__)
+            
+        return json.dumps(animals)

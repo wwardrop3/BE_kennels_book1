@@ -1,25 +1,8 @@
 import sqlite3
+from unicodedata import name
 from models import Customer
 import json
 
-CUSTOMERS = [
-    {
-        "id": 1,
-        "name": "Johnny"
-    },
-     {
-        "id": 2,
-        "name": "Billy"
-    },
-      {
-        "id": 3,
-        "name": "Willy"
-    },
-       {
-        "id": 4,
-        "name": "Chewy"
-    }
-]
 
 def get_all_customers():
     # first create a connection object from the database imported above
@@ -34,7 +17,10 @@ def get_all_customers():
         db_cursor.execute("""
             SELECT
                 c.id,
-                c.name
+                c.name,
+                c.address,
+                c.email,
+                c.password
                 
             FROM customer c
                 """)
@@ -48,13 +34,15 @@ def get_all_customers():
         # call an instance of the Customer class to create new objects
         for row in dataset:
             customer = Customer(row['id'], row['name'], row['address'], row['email'], row['password'])
+            
         
         
         # add the newly created objects to the empty python array
         # __dict__ is part of every class and includes the objects attributes
             customers.append(customer.__dict__)
+ 
         
-    return json.dumps(customers)
+        return json.dumps(customers)
 
 
 
@@ -79,7 +67,10 @@ def get_single_customer(id):
         db_cursor.execute("""
             SELECT
                 c.id,
-                c.name
+                c.name,
+                c.address,
+                c.email,
+                c.password
             
             FROM customer c
             WHERE c.id= ?
