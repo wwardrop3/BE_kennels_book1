@@ -87,7 +87,7 @@ class HandleRequests(BaseHTTPRequestHandler):
         if resource == "locations":
             new_loaction = create_location(post_body)
             
-            self.wfile.write(f"{new_loaction}". encode())
+            self.wfile.write(f"{new_loaction}".encode())
         
         if resource == "employees":
             new_employee = create_employee(post_body)

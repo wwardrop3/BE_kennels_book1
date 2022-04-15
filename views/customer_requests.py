@@ -85,33 +85,53 @@ def get_single_customer(id):
 
 
 
-def create_customer(customer):
-    max_id = CUSTOMERS[-1]["id"]
-    new_id = max_id + 1
-    customer["id"] = new_id
-    CUSTOMERS.append(customer)
-    
-    return customer
+def create_customer(new_customer):
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            INSERT INTO Customer
+                (name, address, email, password)
+            VALUES
+                ( ?, ?, ?, ?);
+            """, (new_customer['name'], new_customer['address'], new_customer['email'], new_customer['password']))
+        
+        id = db_cursor.lastrowid
+        
+        new_customer['id'] = id
+        
+        return json.dumps(new_customer)
 
 
 # this finds the index of the object we are deleting and then removes it from list
 def delete_customer(id):
-    customer_index = -1
-    for index, customer in enumerate(CUSTOMERS):
-        if customer["id"] == id:
-            customer_index = index
-            CUSTOMERS.pop(customer_index)
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            DELETE
+            FROM Customer
+            WHERE id = ?
+            """,(id, ))
             
             
 def update_customer(post_body, id):
-    customer_index = -1
-    for index, customer in enumerate(CUSTOMERS):
-        if customer["id"] == id:
-            customer_index =index
-            CUSTOMERS[customer_index]["status"] = post_body
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            UPDATE Customer
             
-    return CUSTOMERS[customer_index]
+            SET
+                name = ?,
+                address = ?,
+                email = ?,
+                password = ?
+            
+            WHERE id = ?
+            """,(post_body['name'], post_body['address'], post_body['email'], post_body['password']), id, )
 
+    return json.dumps(post_body)
 
 def get_customers_by_email(email):
 

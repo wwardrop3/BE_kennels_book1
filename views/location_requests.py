@@ -1,3 +1,4 @@
+from operator import truediv
 import sqlite3
 import json
 from models import Location
@@ -91,23 +92,33 @@ def get_single_location(id):
 
 
 # this function is going to be run when we post a new location to the database.  Takes in the new dictionary, POSTS, and returns the new dictionary
-def create_location(location):
-    max_id = LOCATIONS[-1]["id"]
-    
-    new_id = max_id + 1
-    
-    location["id"] = new_id
-    
-    LOCATIONS.append(location)
-    
-    return location
+def create_location(new_location):
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            INSERT INTO Location
+                (name, address)
+            VALUES
+                ( ?, ?);
+            """, (new_location['name'], new_location['address']))
+        
+        id = db_cursor.lastrowid
+        
+        new_location['id'] = id
+        
+    return json.dumps(new_location)
 
 def delete_location(id):
-    location_index = -1
-    for index, location in enumerate(LOCATIONS):
-        if location["id"] == id:
-            location_index = index
-            LOCATIONS.pop(location_index)
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            DELETE
+            FROM Location
+            WHERE id = ?
+            """, (id, ))
+        
             
             
 def update_location(post_body, id):
@@ -115,7 +126,23 @@ def update_location(post_body, id):
         db_cursor = conn.cursor()
         
         db_cursor.execute("""
-            UPDATE secretUser
-            SET salary = salary*1.10
+            UPDATE Location l
+            SET
+                name = ?
+                address = ?
             
-                          """)
+            WHERE id = ?
+            """, (post_body['name'], post_body['address'], id))
+        
+        rows_affected = db_cursor.rowcount
+        
+        if rows_affected > 0:
+            return True
+        else:
+            return False
+        
+        
+            
+
+            
+                        

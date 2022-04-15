@@ -1,6 +1,8 @@
 import sqlite3
 import json
 from models import Animal
+from models.customer import Customer
+from models.location import Location
 
 def get_all_animals():
     # Open a connection to the database
@@ -18,8 +20,17 @@ def get_all_animals():
                 a.breed,
                 a.status,
                 a.location_id,
-                a.customer_id
-            FROM animal a
+                a.customer_id,
+                l.name location_name,
+                l.address location_address,
+                c.name customer_name,
+                c.address customer_address
+            FROM Animal a
+            JOIN Location l
+            ON a.location_id = l.id
+            JOIN Customer c
+            ON a.customer_id = c.id
+            
         """)
 
         # Initialize an empty list to hold all animal representations
@@ -41,11 +52,17 @@ def get_all_animals():
             animal = Animal(row['id'], row['name'], row['breed'],
                             row['status'], row['location_id'],
                             row['customer_id'])
+            
+            location = Location(row['id'],row['location_name'], row['location_address'])
 
+            customer = Customer(row['id'], row['customer_name'], row['customer_address'])
+            
+            animal.location = (location.__dict__)
+            animal.customer = (customer.__dict__)
             animals.append(animal.__dict__)
 
-    # Use `json` package to properly serialize list as JSON
-    return json.dumps(animals)
+        # Use `json` package to properly serialize list as JSON
+        return json.dumps(animals)
 
 # Function with single paramenter
 def get_single_animal(id):
@@ -88,22 +105,23 @@ def get_single_animal(id):
         return json.dumps(animal.__dict__)
 
         
-
-def create_animal(animal):
-    # gets the id value of the last object in the list
-    max_id = ANIMALS[-1]["id"]
-    
-    # creates a new unique id for the object we are going to add
-    new_id = max_id + 1
-    
-    #sets the id of the new animal dictionary to the new unique id
-    animal["id"] = new_id
-    
-    #adds the animal dictionary to the list
-    ANIMALS.append(animal)
-    
-    #return the new dictionary that was added to the list
-    return animal
+# new animal is the body of the post
+def create_animal(new_animal):
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            INSERT INTO Animal
+                (name, breed, status, location_id, customer_id)
+            VALUES
+                ( ?, ?, ?, ?, ?);    
+            """, (new_animal['name'], new_animal['breed'], new_animal['status'], new_animal['location_id'], new_animal['customer_id'], ))
+        
+        id = db_cursor.lastrowid
+        
+        new_animal['id'] = id
+        
+    return json.dumps(new_animal)
 
 def delete_animal(id):
     # connect with the database
@@ -131,13 +149,13 @@ def update_animal(new_animal, id):
                 name = ?,
                 breed=?,
                 status = ?,
-                location_id = ?
+                location_id = ?,
                 customer_id = ?
             WHERE id = ?
                         """, (new_animal["name"], new_animal["breed"], new_animal["status"], new_animal["location_id"], new_animal["customer_id"], id, ))
         rows_affected = db_cursor.rowcount
             
-        if rows_affected == 0 #no rows affected means that it did not find anything to update and a 404 code
+        if rows_affected == 0:
             return False
         else:
             return True
@@ -158,7 +176,7 @@ def get_animals_by_location(location_id):
                 a.status,
                 a.breed,
                 a.customer_id,
-                a.location_id
+                a.location_id,
             From animal a
             Where a.location_id = ?
             """,(location_id, ))

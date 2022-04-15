@@ -1,6 +1,8 @@
+from re import S
 import sqlite3
 import json
 from models.employee import Employee
+from models.location import Location
 
 
 EMPLOYEES = [
@@ -36,9 +38,13 @@ def get_all_employees():
                 a.id,
                 a.name,
                 a.address,
-                a.location_id
+                a.location_id,
+                l.name location_name,
+                l.address location_address
             
-            FROM employee a
+            FROM Employee a
+            JOIN Location l
+            ON l.id = a.location_id
         """)
 
         # Initialize an empty list to hold all employee representations
@@ -58,7 +64,11 @@ def get_all_employees():
             # exact order of the parameters defined in the
             # employee class above.
             employee = Employee(row['id'], row['name'], row['address'], row['location_id'])
+            
+            location = Location(row['id'], row['location_name'], row['location_address'])
 
+            employee.location = (location.__dict__)
+            
             employees.append(employee.__dict__)
 
     # Use `json` package to properly serialize list as JSON
@@ -104,33 +114,61 @@ def get_single_employee(id):
 
 
 # this takes an existing employee and simply adds a unique id to it
-def create_employee(employee):
-    # first get the last id of the existing list
-    max_id = EMPLOYEES[-1]["id"]
-    new_id = max_id + 1
-    
-    employee["id"] = new_id
-    
-    EMPLOYEES.append(employee)
-    
-    return employee
+def create_employee(new_employee):
+   with sqlite3.connect("./kennel.sqlite3") as conn:
+       db_cursor = conn.cursor()
+       
+       db_cursor.execute("""
+        INSERT INTO Employee
+            (name, address, location_id)
+        VALUES
+            ( ?, ?, ?);
+        """, (new_employee['name'], new_employee['address'], new_employee['location_id']))
+       
+       id = db_cursor.lastrowid
+       
+       new_employee['id'] = id
+       
+       return json.dumps(new_employee)
 
 
 def delete_employee(id):
-    employee_index = -1
-    for index, employee in enumerate(EMPLOYEES):
-        if employee["id"] == id:
-            employee_index = index
-            EMPLOYEES.pop(employee_index)
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            DELETE
+            FROM Employee
+            WHERE id = ?
+            """, (id, )
+        )
             
             
 def update_employee(post_body, id):
-    employee_index = -1
-    for index, employee in enumerate(EMPLOYEES):
-        if employee["id"] == id:
-            employee_index = index
-    
-    EMPLOYEES[employee_index]["status"] = post_body
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        
+        db_cursor.execute("""
+            UPDATE Employee
+            
+            SET
+                name = ?,
+                address = ?,
+                email = ?,
+                password = ?
+            
+            WHERE id = ?
+            
+            """,(post_body['name'], post_body['address'], post_body['email'], post_body['password'], id))
+        
+        rows_affected = db_cursor.rowcount
+        
+        if rows_affected > 0:
+            return True
+        else:
+            return False
+
+
     
     
 def get_employees_by_location(location_id):
