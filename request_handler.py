@@ -112,7 +112,6 @@ class HandleRequests(BaseHTTPRequestHandler):
         
         print(parsed)
         if len(parsed) == 2:
-            print("asdfsd")
             (resource, id) = parsed
             if resource == "animals":
                 delete_animal(id)
@@ -151,7 +150,6 @@ class HandleRequests(BaseHTTPRequestHandler):
         
         elif resource == "employees":
             update_customer(post_body, id)
-        
         
         if success:
             self._set_headers(200)
